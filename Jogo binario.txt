@@ -1,0 +1,185 @@
+import random
+import pygame
+import sys
+
+pygame.init()
+
+largura = 800
+altura = 600
+
+tela = pygame.display.set_mode((largura, altura))
+pygame.display.set_caption('jogoooo')
+
+# CORES
+PLACEHOLDER = (128, 128, 128)
+PRETO = (0, 0, 0)
+BRANCO = (255, 255, 255)
+VERDE = (0, 210, 120)
+VERDE_JOGADOR = (0, 255, 255)
+VERMELHO = (255, 50, 80)
+CINZA = (150, 150, 150)
+AZUL_CLARO = (60, 100, 255)
+AMARELA = (255, 215, 0)
+
+# FONTES
+
+FONTE_LETRA = pygame.font.Font(None, 200)   # Fonte para a letra do desafio
+FONTE_INPUT = pygame.font.Font(None, 60)    # Fonte para a entrada do usuário
+FONTE_MENSAGEM = pygame.font.Font(None, 50)  # Fonte para o feedback
+FONTE_STREAK = pygame.font.Font(None, 40)   # Fonte para a streak
+
+# VARIAVEIS
+
+letra_sorteada = ''
+letra_binario = ''
+resp_jogador = ''
+msm_feedback = ''
+cor_feedback = PRETO
+streak = 0
+Record_streak = 0
+NOME_FICHEIRO = 'recorde.txt'
+
+# --- NOVO BLOCO PARA CARREGAR O RECORDE ---
+try:
+    with open(NOME_FICHEIRO, 'r') as f:
+        Record_streak = int(f.read())
+except FileNotFoundError:
+    # Este bloco é executado se o ficheiro 'recorde.txt' NÃO for encontrado.
+    # Não fazemos nada, porque o recorde já é 0.
+    print(f"Ficheiro '{NOME_FICHEIRO}' não encontrado. A começar com recorde 0.")
+except ValueError:
+    # Este bloco é executado se o ficheiro estiver vazio ou com texto inválido.
+    # Também não fazemos nada, garantindo que o jogo não crasha.
+    print(f"Ficheiro '{NOME_FICHEIRO}' está vazio ou corrompido. A começar com recorde 0.")
+# --- FIM DO BLOCO DE CARREGAMENTO ---
+
+
+
+CORES = PLACEHOLDER
+
+# tick do jogo
+clock = pygame.time.Clock()
+
+
+def novo_desafio():
+    global letra_sorteada, letra_binario, resp_jogador, inserir
+    # Vai sortear um numero entre 65 e 90 que corespondem a uma letra do alfabeto
+    letra_sorteada = chr(random.randint(65, 90))
+
+    # Aqui ele vai pegar a letra sorteada e trasformar ele em binario
+    letra_binario = (bin(ord(letra_sorteada))[2:]).zfill(8)
+
+    # Aqui ele vai resetar a resposta do jogador
+    resp_jogador = ''
+    
+    inserir = True
+
+
+
+novo_desafio()
+
+estado = False
+while not estado:
+    #variaveis que se atualizam
+    # mostra orientação na tela apenas se ainda não digitou
+    mensagem_input = 'INSERIR A LETRA EM BINARIO'  if inserir else resp_jogador
+    if resp_jogador != '':
+        CORES = VERDE_JOGADOR
+        
+    mens_record = f'RECORD: {Record_streak}'  
+    mens_streak = f'STREAK: {streak}'
+    # event
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            estado = True
+        if event.type == pygame.KEYDOWN:
+            msm_feedback = ''
+
+            if event.key == pygame.K_ESCAPE:
+                estado = True
+
+            elif event.key == pygame.K_DELETE:
+                resp_jogador = ''
+
+            elif event.key == pygame.K_BACKSPACE:
+                if len(resp_jogador) == 5:
+                    resp_jogador = resp_jogador[:-2]
+                else:
+                    resp_jogador = resp_jogador[:-1]
+                                
+                
+
+            elif event.key == pygame.K_0 or event.key == pygame.K_KP_0:
+                
+                inserir = False
+                resp_jogador += '0'
+                if len(resp_jogador) == 4:
+                    resp_jogador += '.'
+           
+            elif event.key == pygame.K_1 or event.key == pygame.K_KP_1:
+                
+                inserir = False
+                resp_jogador += '1'
+                if len(resp_jogador) == 4:
+                    resp_jogador += '.'
+
+            elif event.key == pygame.K_RETURN:
+
+                cazzo = resp_jogador.replace('.','')
+                
+                if cazzo.zfill(8) == letra_binario:
+                    msm_feedback = f'Parabens por ter acertado!!!'
+                    cor_feedback = VERDE
+                    streak += 1
+                    if streak > Record_streak:
+                        Record_streak = streak
+                else:
+                    msm_feedback = f'ERRADO. A resposta correta de {letra_sorteada} é {(letra_binario)[0:4]}.{(letra_binario)[4:]}'
+                    cor_feedback = VERMELHO
+                    streak = 0
+
+                # Ele reseta novamente o feedback e sorteia outra letre
+                novo_desafio()
+
+    # Atualizaçãoo da tela
+    tela.fill(PRETO)
+
+    # Escritas que aparecerao na tela
+    letra_escolhida = FONTE_LETRA.render(letra_sorteada, True, AZUL_CLARO)
+    resposta = FONTE_INPUT.render(mensagem_input, True, CORES)
+    feedback = FONTE_MENSAGEM.render(msm_feedback, True, cor_feedback)
+    texto_streak = FONTE_STREAK.render(mens_streak, True, AMARELA)
+    texto_recorde = FONTE_STREAK.render(mens_record, True, AMARELA)
+    # Posiciona e desenha a letra do desafio
+    rect_letra = letra_escolhida.get_rect(center=(largura / 2, altura * 0.3))
+    tela.blit(letra_escolhida, rect_letra)
+
+    # Posiciona e desenha a resposta do jogador
+    rect_resposta = resposta.get_rect(center=(largura / 2, altura * 0.5))
+    tela.blit(resposta, rect_resposta)
+
+    # Posiciona e desenha o feedback
+    rect_feedback = feedback.get_rect(center=(largura / 2, altura * 0.7))
+    tela.blit(feedback, rect_feedback)
+
+    rect_streak = texto_streak.get_rect(topleft=(30,30))
+    tela.blit(texto_streak, rect_streak)
+
+    rect_record = texto_recorde.get_rect(topright=(largura - 30,30))
+    tela.blit(texto_recorde, rect_record)
+
+    pygame.display.flip()
+    clock.tick(60)
+
+if estado == True:
+    # saida
+
+    try:
+        with open(NOME_FICHEIRO, 'w') as f:
+            f.write(str(Record_streak))
+    except Exception as e:
+        # Mostra um erro se não conseguir salvar, mas não impede o jogo de fechar.
+        print(f"Não foi possível salvar o recorde: {e}")
+    pygame.quit()
+    sys.exit()
